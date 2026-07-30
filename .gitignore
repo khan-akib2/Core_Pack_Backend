@@ -12,3 +12,6 @@ coverage/
 dist/
 build/
 .DS_Store
+mysql-data
+mysql-*.ini
+mysql.sock

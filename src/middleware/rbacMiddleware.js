@@ -4,7 +4,9 @@ export const authorizeRoles = (...allowedRoles) => {
       return res.status(401).json({ success: false, message: 'Unauthenticated' });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    const userRole = req.user.role ? req.user.role.toLowerCase() : '';
+    const isAllowed = allowedRoles.some(role => role.toLowerCase() === userRole);
+    if (!isAllowed) {
       return res.status(403).json({
         success: false,
         message: `Forbidden: Access restricted to roles [${allowedRoles.join(', ')}]`
