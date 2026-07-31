@@ -40,7 +40,7 @@ const connectDB = async () => {
 
     await sequelize.authenticate();
     console.log('[MySQL Connected]: Connection to MySQL database successfully established.');
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: process.env.NODE_ENV !== 'production' });
     console.log('[MySQL Schema Synced]: All tables synchronized.');
     return true;
   } catch (error) {
