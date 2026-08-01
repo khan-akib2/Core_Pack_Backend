@@ -9,7 +9,7 @@ import { seedDatabase } from './utils/seed.js';
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(async (connected) => {
-  if (connected) {
+  if (connected && (process.env.SEED_DB === 'true' || process.env.NODE_ENV !== 'production')) {
     await seedDatabase();
   }
 

@@ -13,13 +13,13 @@ class AuthService {
     const accessToken = jwt.sign(
       payload,
       process.env.JWT_SECRET || 'corepack_super_secret_jwt_key_2026_production_ready',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
     );
 
     const refreshToken = jwt.sign(
       { id: user._id },
       process.env.JWT_REFRESH_SECRET || 'corepack_super_secret_refresh_jwt_key_2026',
-      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
+      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '90d' }
     );
 
     return { accessToken, refreshToken };
