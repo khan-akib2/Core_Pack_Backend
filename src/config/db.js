@@ -5,47 +5,41 @@ const dbName = process.env.DB_NAME || 'corepack_erp';
 const dbUser = process.env.DB_USER || 'root';
 const dbPassword = process.env.DB_PASS !== undefined ? process.env.DB_PASS : '4212';
 
-export const sequelize = new Sequelize(
-  dbName,
-  dbUser,
-  dbPassword,
-  {
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT) || 3306,
-    dialect: 'mysql',
-    logging: process.env.NODE_ENV === 'production' ? false : console.log,
-    dialectOptions: (process.env.DB_SSL === 'true' || String(process.env.DB_HOST).includes('aivencloud')) ? {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    } : {},
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
-    }
+const isAiven = String(process.env.DATABASE_URL || process.env.DB_HOST).includes('aivencloud');
+const dialectOptions = (process.env.DB_SSL === 'true' || isAiven) ? {
+  ssl: {
+    require: true,
+    rejectUnauthorized: false
   }
-);
+} : {};
+
+export const sequelize = process.env.DATABASE_URL 
+  ? new Sequelize(process.env.DATABASE_URL, {
+      dialect: 'mysql',
+      logging: process.env.NODE_ENV === 'production' ? false : console.log,
+      dialectOptions
+    })
+  : new Sequelize(dbName, dbUser, dbPassword, {
+      host: process.env.DB_HOST || 'localhost',
+      port: Number(process.env.DB_PORT) || 3306,
+      dialect: 'mysql',
+      logging: process.env.NODE_ENV === 'production' ? false : console.log,
+      dialectOptions,
+      pool: { max: 5, min: 0, acquire: 30000, idle: 10000 }
+    });
 
 const connectDB = async () => {
   try {
     console.log(`[DEBUG Connection Details]: Host="${process.env.DB_HOST || 'localhost'}", Port="${process.env.DB_PORT || 3306}", User="${dbUser}", Pass="${dbPassword}", DB="${dbName}"`);
     
-    // Aiven requires SSL, so let's dynamically enforce it if the host is Aiven
-    const isAiven = String(process.env.DB_HOST).includes('aivencloud');
-    const sslConfig = (process.env.DB_SSL === 'true' || isAiven) ? { rejectUnauthorized: false } : undefined;
-
-    // We only try to create the database if we are NOT on Aiven, 
-    // because Aiven managed users do not have CREATE DATABASE privileges.
-    if (!isAiven) {
+    // We only try to create the database if we are NOT on Aiven and NOT using DATABASE_URL
+    if (!isAiven && !process.env.DATABASE_URL) {
       const connection = await mysql.createConnection({
         host: process.env.DB_HOST || 'localhost',
         port: Number(process.env.DB_PORT) || 3306,
         user: dbUser,
         password: dbPassword,
-        ssl: sslConfig
+        ssl: dialectOptions.ssl
       });
       await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
       await connection.end();
