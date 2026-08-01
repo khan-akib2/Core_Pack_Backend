@@ -50,8 +50,8 @@ const connectDB = async () => {
     console.log('[MySQL Connected]: Connection to MySQL database successfully established.');
     
     if (process.env.NODE_ENV === 'production') {
-      await sequelize.sync();
-      console.log('[MySQL Schema Synced]: All tables synchronized natively.');
+      await sequelize.sync({ alter: true });
+      console.log('[MySQL Schema Synced]: All tables synchronized natively with alter enabled.');
     } else {
       await sequelize.sync({ alter: true });
       console.log('[MySQL Schema Synced]: All tables synchronized and altered.');
