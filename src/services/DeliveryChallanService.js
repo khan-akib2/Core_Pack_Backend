@@ -19,10 +19,17 @@ class DeliveryChallanService {
       remarks: item.remarks || ''
     }));
 
-    let challanNumber = await counterService.generateChallanNumber();
-    const existingChallan = await deliveryChallanRepository.findOne({ challanNumber });
-    if (existingChallan) {
+    let challanNumber;
+    if (data.challanNumber && String(data.challanNumber).trim() !== '') {
+      challanNumber = String(data.challanNumber).trim();
+      const existing = await deliveryChallanRepository.findOne({ challanNumber });
+      if (existing) throw new Error('Challan number already exists');
+    } else {
       challanNumber = await counterService.generateChallanNumber();
+      const existingChallan = await deliveryChallanRepository.findOne({ challanNumber });
+      if (existingChallan) {
+        challanNumber = await counterService.generateChallanNumber();
+      }
     }
 
     const challan = await deliveryChallanRepository.create({
@@ -47,6 +54,52 @@ class DeliveryChallanService {
     });
 
     return challan;
+  }
+
+  async updateChallan(id, data, userId) {
+    const existingChallan = await deliveryChallanRepository.findById(id);
+    if (!existingChallan) throw new Error('Challan not found');
+
+    const customer = await customerRepository.findById(data.customerId || existingChallan.customerId);
+    if (!customer) throw new Error('Customer not found');
+
+    const items = data.items.map(item => ({
+      productId: (item.productId && String(item.productId).trim() !== '') ? item.productId : undefined,
+      name: item.name || 'Packaging Product',
+      hsnCode: item.hsnCode || '44151000',
+      qty: Number(item.qty) || 1,
+      unit: item.unit || 'Pcs',
+      remarks: item.remarks || ''
+    }));
+
+    let challanNumber = existingChallan.challanNumber;
+    if (data.challanNumber && data.challanNumber.trim() !== '' && data.challanNumber.trim() !== challanNumber) {
+      const existing = await deliveryChallanRepository.findOne({ challanNumber: data.challanNumber.trim() });
+      if (!existing) {
+        challanNumber = data.challanNumber.trim();
+      }
+    }
+
+    const updatedChallan = await deliveryChallanRepository.update(id, {
+      challanNumber,
+      challanDate: data.challanDate || existingChallan.challanDate,
+      vehicleNo: data.vehicleNo !== undefined ? data.vehicleNo : existingChallan.vehicleNo,
+      transportMode: data.transportMode || existingChallan.transportMode,
+      customerId: customer._id,
+      customerSnapshot: {
+        name: customer.name,
+        companyName: customer.companyName,
+        gstin: customer.gstin,
+        email: customer.email,
+        phone: customer.phone,
+        billingAddress: customer.billingAddress,
+        shippingAddress: customer.shippingAddress
+      },
+      items,
+      notes: data.notes !== undefined ? data.notes : existingChallan.notes,
+    });
+
+    return updatedChallan;
   }
 }
 

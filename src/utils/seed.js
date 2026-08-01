@@ -14,17 +14,17 @@ export async function seedDatabase() {
     await connectDB();
     console.log('[MySQL Seeding]: Synchronizing schema and seeding initial data...');
 
-    const existingAdmin = await User.findOne({ where: { email: 'admin@corepack.in' } });
+    const existingAdmin = await User.findOne({ where: { email: 'admin.corepack@gmail.com' } });
     if (!existingAdmin) {
-      const passwordHash = await User.hashPassword('adminpassword123');
+      const passwordHash = await User.hashPassword('corepack@123!');
       await User.create({
         name: 'CorePack Admin',
-        email: 'admin@corepack.in',
+        email: 'admin.corepack@gmail.com',
         passwordHash,
         role: ROLES.ADMIN,
         phone: '+91 98200 12345'
       });
-      console.log('[MySQL Seeding]: Created Admin User (admin@corepack.in / adminpassword123)');
+      console.log('[MySQL Seeding]: Created Admin User (admin.corepack@gmail.com / corepack@123!)');
     }
 
     const existingCompany = await CompanySettings.findOne();

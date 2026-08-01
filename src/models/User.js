@@ -52,13 +52,22 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     defaultValue: ''
   },
-  refreshTokenHash: {
-    type: DataTypes.STRING,
+  lastLogin: {
+    type: DataTypes.DATE,
     allowNull: true
   }
 }, {
   timestamps: true,
-  tableName: 'users'
+  paranoid: true,
+  tableName: 'users',
+  defaultScope: {
+    attributes: { exclude: ['passwordHash'] }
+  },
+  scopes: {
+    withPassword: {
+      attributes: { include: ['passwordHash'] }
+    }
+  }
 });
 
 User.prototype.comparePassword = async function(candidatePassword) {

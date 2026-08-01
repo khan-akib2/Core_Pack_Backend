@@ -22,6 +22,11 @@ const DeliveryChallan = sequelize.define('DeliveryChallan', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
   },
+  vehicleNo: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: ''
+  },
   customerId: {
     type: DataTypes.INTEGER,
     allowNull: true
@@ -66,6 +71,7 @@ const DeliveryChallan = sequelize.define('DeliveryChallan', {
   }
 }, {
   timestamps: true,
+  paranoid: true,
   tableName: 'delivery_challans'
 });
 

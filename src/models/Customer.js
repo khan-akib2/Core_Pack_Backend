@@ -63,6 +63,7 @@ const Customer = sequelize.define('Customer', {
   }
 }, {
   timestamps: true,
+  paranoid: true,
   tableName: 'customers'
 });
 

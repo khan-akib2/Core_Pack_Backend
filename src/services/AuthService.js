@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
 import userRepository from '../repositories/UserRepository.js';
 
 class AuthService {
@@ -43,11 +42,9 @@ class AuthService {
         throw new Error('Invalid credentials');
       }
 
-      const { accessToken, refreshToken } = this.generateTokens(user);
+      await userRepository.updateLastLogin(user.id || user._id);
 
-      const salt = await bcrypt.genSalt(10);
-      const refreshTokenHash = await bcrypt.hash(refreshToken, salt);
-      await userRepository.updateRefreshToken(user._id, refreshTokenHash);
+      const { accessToken, refreshToken } = this.generateTokens(user);
 
       return {
         user: {
@@ -102,27 +99,18 @@ class AuthService {
       process.env.JWT_REFRESH_SECRET || 'corepack_super_secret_refresh_jwt_key_2026'
     );
 
-    const user = await userRepository.findById(decoded.id);
+    const user = await userRepository.findByIdWithAuth(decoded.id);
 
-    if (!user || !user.refreshTokenHash) {
+    if (!user) {
       throw new Error('Invalid refresh token');
     }
 
-    const isMatch = await bcrypt.compare(refreshToken, user.refreshTokenHash);
-    if (!isMatch) {
-      throw new Error('Invalid or revoked refresh token');
-    }
-
-    const tokens = this.generateTokens(user);
-    const salt = await bcrypt.genSalt(10);
-    const newRefreshTokenHash = await bcrypt.hash(tokens.refreshToken, salt);
-    await userRepository.updateRefreshToken(user._id, newRefreshTokenHash);
-
-    return tokens;
+    return this.generateTokens(user);
   }
 
   async logout(userId) {
-    await userRepository.updateRefreshToken(userId, null);
+    // With simplified stateless JWT auth, we don't need backend DB invalidation for logout.
+    // The cookie is simply cleared in the controller.
     return { success: true };
   }
 }

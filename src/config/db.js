@@ -13,9 +13,9 @@ export const sequelize = new Sequelize(
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT) || 3306,
     dialect: 'mysql',
-    logging: false,
+    logging: process.env.NODE_ENV === 'production' ? false : console.log,
     pool: {
-      max: 10,
+      max: 5,
       min: 0,
       acquire: 30000,
       idle: 10000
@@ -40,8 +40,15 @@ const connectDB = async () => {
 
     await sequelize.authenticate();
     console.log('[MySQL Connected]: Connection to MySQL database successfully established.');
-    await sequelize.sync({ alter: process.env.NODE_ENV !== 'production' });
-    console.log('[MySQL Schema Synced]: All tables synchronized.');
+    
+    if (process.env.NODE_ENV === 'production') {
+      await sequelize.sync();
+      console.log('[MySQL Schema Synced]: All tables synchronized natively.');
+    } else {
+      await sequelize.sync({ alter: true });
+      console.log('[MySQL Schema Synced]: All tables synchronized and altered.');
+    }
+    
     return true;
   } catch (error) {
     console.error(`[MySQL Connection Error]: ${error.message}`);

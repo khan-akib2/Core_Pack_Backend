@@ -3,6 +3,10 @@ import { Op } from 'sequelize';
 function transformQueryVal(val) {
   if (val === null || val === undefined) return val;
   if (val instanceof Date) return val;
+  if (val instanceof RegExp) {
+    const raw = val.source.replace(/^\\?%?|\\?%?$/g, '');
+    return { [Op.like]: `%${raw}%` };
+  }
 
   if (typeof val === 'object' && !Array.isArray(val)) {
     const res = {};
@@ -42,8 +46,10 @@ function buildSequelizeWhere(filter = {}) {
 
     const normKey = (key === '_id' || key === 'id') ? 'id' : key;
 
-    // Ignore MongoDB nested field notation like 'customerSnapshot.companyName'
+    // Map MongoDB nested field notation to the top-level JSON text column
     if (normKey.includes('.')) {
+      const topKey = normKey.split('.')[0];
+      where[topKey] = transformQueryVal(val);
       return;
     }
 

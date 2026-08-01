@@ -86,6 +86,7 @@ const Quotation = sequelize.define('Quotation', {
   }
 }, {
   timestamps: true,
+  paranoid: true,
   tableName: 'quotations'
 });
 

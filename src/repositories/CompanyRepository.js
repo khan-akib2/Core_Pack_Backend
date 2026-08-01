@@ -27,7 +27,11 @@ class CompanyRepository extends BaseRepository {
     if (!settings) {
       return await this.model.create(updateData);
     }
-    await settings.update(updateData);
+    settings.set(updateData);
+    if (updateData.bankDetails) settings.changed('bankDetails', true);
+    if (updateData.address) settings.changed('address', true);
+    if (updateData.categories) settings.changed('categories', true);
+    await settings.save();
     return settings;
   }
 }

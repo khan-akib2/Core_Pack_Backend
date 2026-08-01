@@ -1,5 +1,13 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
+import slowDown from 'express-slow-down';
+import hpp from 'hpp';
+import compression from 'compression';
+import cookieParser from 'cookie-parser';
+import { xssSanitizer } from './middleware/xss.js';
 import authRoutes from './routes/authRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
@@ -11,17 +19,69 @@ import reportRoutes from './routes/reportRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import counterRoutes from './routes/counterRoutes.js';
+import backupRoutes from './routes/backupRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import logger from './utils/logger.js';
 
 const app = express();
 
+app.disable('x-powered-by');
+
+// Setup morgan to pipe to winston
+const morganFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev';
+app.use(morgan(morganFormat, { stream: { write: (message) => logger.info(message.trim()) } }));
+
+app.use(compression());
+
+const whitelist = process.env.CORS_WHITELIST ? process.env.CORS_WHITELIST.split(',') : ['http://localhost:3000', 'http://localhost:5000'];
 app.use(cors({
-  origin: '*',
+  origin: (origin, callback) => {
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+    },
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  crossOriginEmbedderPolicy: false, 
+}));
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
+  message: { status: 'Error', message: 'Too many requests from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const speedLimiter = slowDown({
+  windowMs: 15 * 60 * 1000, 
+  delayAfter: 50, 
+  delayMs: (hits) => (hits - 50) * 500, 
+});
+
+app.use('/api/', limiter);
+app.use('/api/', speedLimiter);
+
+app.use(express.json({ limit: '1mb' })); 
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cookieParser());
+
+app.use(xssSanitizer);
+app.use(hpp());
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -42,6 +102,7 @@ app.use('/api/v1/reports', reportRoutes);
 app.use('/api/v1/search', searchRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/counters', counterRoutes);
+app.use('/api/v1/backups', backupRoutes);
 
 app.use(errorHandler);
 

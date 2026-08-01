@@ -8,11 +8,16 @@ class UserRepository extends BaseRepository {
 
   async findByEmail(email) {
     if (!email) return null;
-    return await this.findOne({ email });
+    return await User.scope('withPassword').findOne({ where: { email } });
   }
 
-  async updateRefreshToken(userId, refreshTokenHash) {
-    return await this.updateById(userId, { refreshTokenHash });
+  async findByIdWithAuth(id) {
+    if (!id) return null;
+    return await User.scope('withPassword').findByPk(id);
+  }
+
+  async updateLastLogin(userId) {
+    return await this.updateById(userId, { lastLogin: new Date() });
   }
 }
 

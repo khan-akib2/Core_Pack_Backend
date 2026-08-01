@@ -3,21 +3,20 @@ import {
   getQuotations,
   getQuotationById,
   createQuotation,
+  updateQuotation,
   updateQuotationStatus,
   deleteQuotation
 } from '../controllers/QuotationController.js';
-import { authenticate } from '../middleware/authMiddleware.js';
-import { authorizeRoles } from '../middleware/rbacMiddleware.js';
-import { ROLES } from '../constants/roles.js';
+import { authenticate, authorize } from '../middleware/authMiddleware.js';
+import { PERMISSIONS } from '../constants/roles.js';
 
 const router = express.Router();
 
-router.use(authenticate);
-
-router.get('/', getQuotations);
-router.get('/:id', getQuotationById);
-router.post('/', authorizeRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.ACCOUNTANT), createQuotation);
-router.patch('/:id/status', updateQuotationStatus);
-router.delete('/:id', authorizeRoles(ROLES.ADMIN), deleteQuotation);
+router.get('/', authenticate, authorize([PERMISSIONS.QUOTATIONS_READ]), getQuotations);
+router.get('/:id', authenticate, authorize([PERMISSIONS.QUOTATIONS_READ]), getQuotationById);
+router.post('/', authenticate, authorize([PERMISSIONS.QUOTATIONS_CREATE]), createQuotation);
+router.put('/:id', authenticate, authorize([PERMISSIONS.QUOTATIONS_CREATE]), updateQuotation);
+router.patch('/:id/status', authenticate, authorize([PERMISSIONS.QUOTATIONS_CONVERT]), updateQuotationStatus);
+router.delete('/:id', authenticate, authorize([PERMISSIONS.QUOTATIONS_CREATE]), deleteQuotation);
 
 export default router;

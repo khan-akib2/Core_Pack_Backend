@@ -1,5 +1,7 @@
+import logger from '../utils/logger.js';
+
 export const errorHandler = (err, req, res, next) => {
-  console.error('API Error:', err);
+  logger.error(`API Error: ${err.message}`, { error: err, url: req.originalUrl, method: req.method });
 
   const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
 

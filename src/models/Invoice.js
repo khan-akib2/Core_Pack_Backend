@@ -48,6 +48,10 @@ const Invoice = sequelize.define('Invoice', {
     type: DataTypes.DATE,
     allowNull: true
   },
+  vehicleNo: {
+    type: DataTypes.STRING,
+    defaultValue: ''
+  },
   transportDetails: {
     type: DataTypes.TEXT,
     get() {
@@ -146,6 +150,7 @@ const Invoice = sequelize.define('Invoice', {
   }
 }, {
   timestamps: true,
+  paranoid: true,
   tableName: 'invoices'
 });
 

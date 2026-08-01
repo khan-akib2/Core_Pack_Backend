@@ -3,21 +3,20 @@ import {
   getChallans,
   getChallanById,
   createChallan,
+  updateChallan,
   updateChallanStatus,
   deleteChallan
 } from '../controllers/DeliveryChallanController.js';
-import { authenticate } from '../middleware/authMiddleware.js';
-import { authorizeRoles } from '../middleware/rbacMiddleware.js';
-import { ROLES } from '../constants/roles.js';
+import { authenticate, authorize } from '../middleware/authMiddleware.js';
+import { PERMISSIONS } from '../constants/roles.js';
 
 const router = express.Router();
 
-router.use(authenticate);
-
-router.get('/', getChallans);
-router.get('/:id', getChallanById);
-router.post('/', authorizeRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.ACCOUNTANT, ROLES.STAFF), createChallan);
-router.patch('/:id/status', updateChallanStatus);
-router.delete('/:id', authorizeRoles(ROLES.ADMIN), deleteChallan);
+router.get('/', authenticate, authorize([PERMISSIONS.CHALLANS_READ]), getChallans);
+router.get('/:id', authenticate, authorize([PERMISSIONS.CHALLANS_READ]), getChallanById);
+router.post('/', authenticate, authorize([PERMISSIONS.CHALLANS_CREATE]), createChallan);
+router.put('/:id', authenticate, authorize([PERMISSIONS.CHALLANS_EDIT]), updateChallan);
+router.patch('/:id/status', authenticate, authorize([PERMISSIONS.CHALLANS_EDIT]), updateChallanStatus);
+router.delete('/:id', authenticate, authorize([PERMISSIONS.CHALLANS_EDIT]), deleteChallan);
 
 export default router;

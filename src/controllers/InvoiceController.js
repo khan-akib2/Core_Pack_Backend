@@ -56,6 +56,15 @@ export const createInvoice = async (req, res, next) => {
   }
 };
 
+export const updateInvoice = async (req, res, next) => {
+  try {
+    const invoice = await invoiceService.updateInvoice(req.params.id, req.body, req.user.id);
+    res.json({ success: true, message: 'Invoice updated successfully', data: invoice });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const recordPayment = async (req, res, next) => {
   try {
     const invoice = await invoiceService.recordPayment(req.params.id, req.body);

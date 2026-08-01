@@ -6,18 +6,15 @@ import {
   updateProduct,
   deleteProduct
 } from '../controllers/ProductController.js';
-import { authenticate } from '../middleware/authMiddleware.js';
-import { authorizeRoles } from '../middleware/rbacMiddleware.js';
-import { ROLES } from '../constants/roles.js';
+import { authenticate, authorize } from '../middleware/authMiddleware.js';
+import { PERMISSIONS } from '../constants/roles.js';
 
 const router = express.Router();
 
-router.use(authenticate);
-
-router.get('/', getProducts);
-router.get('/:id', getProductById);
-router.post('/', authorizeRoles(ROLES.ADMIN, ROLES.MANAGER), createProduct);
-router.put('/:id', authorizeRoles(ROLES.ADMIN, ROLES.MANAGER), updateProduct);
-router.delete('/:id', authorizeRoles(ROLES.ADMIN), deleteProduct);
+router.get('/', authenticate, authorize([PERMISSIONS.PRODUCTS_READ]), getProducts);
+router.get('/:id', authenticate, authorize([PERMISSIONS.PRODUCTS_READ]), getProductById);
+router.post('/', authenticate, authorize([PERMISSIONS.PRODUCTS_MANAGE]), createProduct);
+router.put('/:id', authenticate, authorize([PERMISSIONS.PRODUCTS_MANAGE]), updateProduct);
+router.delete('/:id', authenticate, authorize([PERMISSIONS.PRODUCTS_MANAGE]), deleteProduct);
 
 export default router;

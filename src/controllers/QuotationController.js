@@ -51,6 +51,15 @@ export const createQuotation = async (req, res, next) => {
   }
 };
 
+export const updateQuotation = async (req, res, next) => {
+  try {
+    const quotation = await quotationService.updateQuotation(req.params.id, req.body, req.user.id);
+    res.json({ success: true, message: 'Quotation updated successfully', data: quotation });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateQuotationStatus = async (req, res, next) => {
   try {
     const { status } = req.body;

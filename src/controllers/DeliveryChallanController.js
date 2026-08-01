@@ -51,6 +51,15 @@ export const createChallan = async (req, res, next) => {
   }
 };
 
+export const updateChallan = async (req, res, next) => {
+  try {
+    const challan = await deliveryChallanService.updateChallan(req.params.id, req.body, req.user.id);
+    res.json({ success: true, message: 'Delivery Challan updated successfully', data: challan });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateChallanStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
