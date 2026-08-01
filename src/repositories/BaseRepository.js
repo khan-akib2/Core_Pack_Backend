@@ -73,9 +73,9 @@ class BaseRepository {
     return await this.model.findByPk(id);
   }
 
-  async findOne(filter = {}) {
+  async findOne(filter = {}, options = {}) {
     const where = buildSequelizeWhere(filter);
-    return await this.model.findOne({ where });
+    return await this.model.findOne({ where, ...options });
   }
 
   async find(filter = {}, options = {}) {

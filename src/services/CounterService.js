@@ -40,11 +40,11 @@ class CounterService {
 
     let paddedSeq = nextSeq.toString().padStart(3, '0');
     if (model) {
-      let exists = await model.findOne({ where: { [field]: paddedSeq } });
+      let exists = await model.findOne({ where: { [field]: paddedSeq }, paranoid: false });
       while (exists) {
         nextSeq++;
         paddedSeq = nextSeq.toString().padStart(3, '0');
-        exists = await model.findOne({ where: { [field]: paddedSeq } });
+        exists = await model.findOne({ where: { [field]: paddedSeq }, paranoid: false });
       }
     }
 
@@ -79,11 +79,11 @@ class CounterService {
 
     let paddedSeq = nextSeq.toString().padStart(3, '0');
     if (model) {
-      let exists = await model.findOne({ where: { [field]: paddedSeq } });
+      let exists = await model.findOne({ where: { [field]: paddedSeq }, paranoid: false });
       while (exists) {
         nextSeq++;
         paddedSeq = nextSeq.toString().padStart(3, '0');
-        exists = await model.findOne({ where: { [field]: paddedSeq } });
+        exists = await model.findOne({ where: { [field]: paddedSeq }, paranoid: false });
       }
     }
 

@@ -89,7 +89,7 @@ class InvoiceService {
         ? data.invoiceNumber.trim() 
         : await counterService.generateInvoiceNumber());
 
-    const existingInvoice = await invoiceRepository.findOne({ invoiceNumber });
+    const existingInvoice = await invoiceRepository.findOne({ invoiceNumber }, { paranoid: false });
     if (existingInvoice) {
       invoiceNumber = await counterService.generateInvoiceNumber();
     }
