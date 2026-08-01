@@ -62,6 +62,18 @@ const Invoice = sequelize.define('Invoice', {
       this.setDataValue('transportDetails', JSON.stringify(val || {}));
     }
   },
+  transportMode: {
+    type: DataTypes.STRING,
+    defaultValue: 'Road'
+  },
+  placeOfSupply: {
+    type: DataTypes.STRING,
+    defaultValue: 'Maharashtra'
+  },
+  isReverseCharge: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
   items: {
     type: DataTypes.TEXT,
     get() {
@@ -99,6 +111,10 @@ const Invoice = sequelize.define('Invoice', {
   isInterstate: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  roundOff: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0
   },
   grandTotal: {
     type: DataTypes.FLOAT,
@@ -147,6 +163,14 @@ const Invoice = sequelize.define('Invoice', {
     set(val) {
       this.setDataValue('terms', JSON.stringify(val || []));
     }
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    allowNull: true
   }
 }, {
   timestamps: true,

@@ -63,20 +63,13 @@ app.use(helmet({
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 100, 
+  max: 1000, 
   message: { status: 'Error', message: 'Too many requests from this IP, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false
 });
 
-const speedLimiter = slowDown({
-  windowMs: 15 * 60 * 1000, 
-  delayAfter: 50, 
-  delayMs: (hits) => (hits - 50) * 500, 
-});
-
 app.use('/api/', limiter);
-app.use('/api/', speedLimiter);
 
 app.use(express.json({ limit: '1mb' })); 
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
