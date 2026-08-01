@@ -14,6 +14,12 @@ export const sequelize = new Sequelize(
     port: Number(process.env.DB_PORT) || 3306,
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'production' ? false : console.log,
+    dialectOptions: (process.env.DB_SSL === 'true' || String(process.env.DB_HOST).includes('aivencloud')) ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    } : {},
     pool: {
       max: 5,
       min: 0,
@@ -27,16 +33,24 @@ const connectDB = async () => {
   try {
     console.log(`[DEBUG Connection Details]: Host="${process.env.DB_HOST || 'localhost'}", Port="${process.env.DB_PORT || 3306}", User="${dbUser}", Pass="${dbPassword}", DB="${dbName}"`);
     
-    // Automatically create database if not exists
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      port: Number(process.env.DB_PORT) || 3306,
-      user: dbUser,
-      password: dbPassword
-    });
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
-    await connection.end();
-    console.log(`[MySQL Database Check]: Database "${dbName}" checked/created.`);
+    // Aiven requires SSL, so let's dynamically enforce it if the host is Aiven
+    const isAiven = String(process.env.DB_HOST).includes('aivencloud');
+    const sslConfig = (process.env.DB_SSL === 'true' || isAiven) ? { rejectUnauthorized: false } : undefined;
+
+    // We only try to create the database if we are NOT on Aiven, 
+    // because Aiven managed users do not have CREATE DATABASE privileges.
+    if (!isAiven) {
+      const connection = await mysql.createConnection({
+        host: process.env.DB_HOST || 'localhost',
+        port: Number(process.env.DB_PORT) || 3306,
+        user: dbUser,
+        password: dbPassword,
+        ssl: sslConfig
+      });
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
+      await connection.end();
+      console.log(`[MySQL Database Check]: Database "${dbName}" checked/created.`);
+    }
 
     await sequelize.authenticate();
     console.log('[MySQL Connected]: Connection to MySQL database successfully established.');
