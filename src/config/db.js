@@ -30,8 +30,11 @@ export const sequelize = process.env.DATABASE_URL
 
 const connectDB = async () => {
   try {
-    console.log(`[DEBUG Connection Details]: Host="${process.env.DB_HOST || 'localhost'}", Port="${process.env.DB_PORT || 3306}", User="${dbUser}", Pass="${dbPassword}", DB="${dbName}"`);
-    
+    if (process.env.DATABASE_URL) {
+      console.log(`[DEBUG Connection Details]: Connecting via DATABASE_URL to host: "${new URL(process.env.DATABASE_URL).hostname}"`);
+    } else {
+      console.log(`[DEBUG Connection Details]: Host="${process.env.DB_HOST || 'localhost'}", Port="${process.env.DB_PORT || 3306}", User="${dbUser}", Pass="${dbPassword}", DB="${dbName}"`);
+    }
     // We only try to create the database if we are NOT on Aiven and NOT using DATABASE_URL
     if (!isAiven && !process.env.DATABASE_URL) {
       const connection = await mysql.createConnection({
