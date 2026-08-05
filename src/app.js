@@ -78,6 +78,10 @@ app.use(cookieParser());
 app.use(xssSanitizer);
 app.use(hpp());
 
+app.get('/', (req, res) => {
+  res.status(200).send('Core Pack India API is running');
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
