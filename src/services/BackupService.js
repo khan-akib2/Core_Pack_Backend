@@ -1,9 +1,8 @@
-import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import util from 'util';
-
-const execAsync = util.promisify(exec);
+import zlib from 'zlib';
+import mysqldump from 'mysqldump';
+import mysql from 'mysql2/promise';
 const backupDir = path.join(process.cwd(), 'backups');
 
 class BackupService {
@@ -31,14 +30,23 @@ class BackupService {
     const dbUser = process.env.DB_USER || 'root';
     const dbPassword = process.env.DB_PASS || '4212';
     const dbHost = process.env.DB_HOST || 'localhost';
+    const dbPort = process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306;
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupFileName = `${dbName}_backup_${timestamp}.sql.gz`;
     const backupFilePath = path.join(backupDir, backupFileName);
 
-    const dumpCommand = `mysqldump -h ${dbHost} -u ${dbUser} -p${dbPassword} ${dbName} | gzip > ${backupFilePath}`;
-    
-    await execAsync(dumpCommand);
+    await mysqldump({
+      connection: {
+        host: dbHost,
+        user: dbUser,
+        password: dbPassword,
+        database: dbName,
+        port: dbPort,
+      },
+      dumpToFile: backupFilePath,
+      compressFile: true,
+    });
     
     // Verify backup
     const stats = fs.statSync(backupFilePath);
@@ -55,14 +63,31 @@ class BackupService {
     const dbUser = process.env.DB_USER || 'root';
     const dbPassword = process.env.DB_PASS || '4212';
     const dbHost = process.env.DB_HOST || 'localhost';
+    const dbPort = process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306;
 
     const backupFilePath = path.join(backupDir, filename);
     if (!fs.existsSync(backupFilePath)) {
       throw new Error('Backup file not found');
     }
 
-    const restoreCommand = `gunzip < ${backupFilePath} | mysql -h ${dbHost} -u ${dbUser} -p${dbPassword} ${dbName}`;
-    await execAsync(restoreCommand);
+    const gzippedBuffer = fs.readFileSync(backupFilePath);
+    const sqlBuffer = zlib.gunzipSync(gzippedBuffer);
+    const sqlString = sqlBuffer.toString('utf8');
+
+    const connection = await mysql.createConnection({
+        host: dbHost,
+        user: dbUser,
+        password: dbPassword,
+        port: dbPort,
+        multipleStatements: true
+    });
+    
+    try {
+      await connection.query(`USE \`${dbName}\``);
+      await connection.query(sqlString);
+    } finally {
+      await connection.end();
+    }
     return true;
   }
 

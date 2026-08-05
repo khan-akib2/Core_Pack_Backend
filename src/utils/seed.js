@@ -2,8 +2,6 @@ import dotenv from 'dotenv';
 import connectDB, { sequelize } from '../config/db.js';
 import User from '../models/User.js';
 import CompanySettings from '../models/CompanySettings.js';
-import Customer from '../models/Customer.js';
-import Product from '../models/Product.js';
 import Counter from '../models/Counter.js';
 import { ROLES } from '../constants/roles.js';
 
