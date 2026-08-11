@@ -67,7 +67,14 @@ class QuotationService {
     if (data.quoteNumber && String(data.quoteNumber).trim() !== '') {
       quoteNumber = String(data.quoteNumber).trim();
       const existing = await quotationRepository.findOne({ quoteNumber }, { paranoid: false });
-      if (existing) throw new Error('Quotation number already exists');
+      if (existing) {
+        if (existing.deletedAt) {
+          existing.quoteNumber = `${existing.quoteNumber}_deleted_${Date.now()}`;
+          await existing.save({ paranoid: false });
+        } else {
+          throw new Error('Quotation number already exists');
+        }
+      }
     } else {
       quoteNumber = await counterService.generateQuotationNumber();
       const existingQuote = await quotationRepository.findOne({ quoteNumber }, { paranoid: false });
@@ -179,7 +186,12 @@ class QuotationService {
     if (data.customQuoteNumber && data.customQuoteNumber.trim() !== '' && data.customQuoteNumber.trim() !== quoteNumber) {
       const existing = await quotationRepository.findOne({ quoteNumber: data.customQuoteNumber.trim() }, { paranoid: false });
       if (existing) {
-        throw new Error('Quotation number already exists');
+        if (existing.deletedAt) {
+          existing.quoteNumber = `${existing.quoteNumber}_deleted_${Date.now()}`;
+          await existing.save({ paranoid: false });
+        } else {
+          throw new Error('Quotation number already exists');
+        }
       }
       quoteNumber = data.customQuoteNumber.trim();
     }

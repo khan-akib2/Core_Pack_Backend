@@ -88,7 +88,12 @@ class InvoiceService {
       invoiceNumber = data.customInvoiceNumber.trim();
       const existingInvoice = await invoiceRepository.findOne({ invoiceNumber }, { paranoid: false });
       if (existingInvoice) {
-        throw new Error('Invoice number already exists');
+        if (existingInvoice.deletedAt) {
+          existingInvoice.invoiceNumber = `${existingInvoice.invoiceNumber}_deleted_${Date.now()}`;
+          await existingInvoice.save({ paranoid: false });
+        } else {
+          throw new Error('Invoice number already exists');
+        }
       }
     } else if (data.invoiceNumber && data.invoiceNumber.trim() !== '') {
       invoiceNumber = data.invoiceNumber.trim();
@@ -257,7 +262,12 @@ class InvoiceService {
     if (data.customInvoiceNumber && data.customInvoiceNumber.trim() !== '' && data.customInvoiceNumber.trim() !== invoiceNumber) {
       const existing = await invoiceRepository.findOne({ invoiceNumber: data.customInvoiceNumber.trim() }, { paranoid: false });
       if (existing) {
-        throw new Error('Invoice number already exists');
+        if (existing.deletedAt) {
+          existing.invoiceNumber = `${existing.invoiceNumber}_deleted_${Date.now()}`;
+          await existing.save({ paranoid: false });
+        } else {
+          throw new Error('Invoice number already exists');
+        }
       }
       invoiceNumber = data.customInvoiceNumber.trim();
     }
