@@ -72,7 +72,14 @@ const DeliveryChallan = sequelize.define('DeliveryChallan', {
 }, {
   timestamps: true,
   paranoid: true,
-  tableName: 'delivery_challans'
+  tableName: 'delivery_challans',
+  hooks: {
+    beforeDestroy: async (instance, options) => {
+      const suffix = `_deleted_${Date.now()}`;
+      instance.challanNumber = `${instance.challanNumber}${suffix}`;
+      await instance.save({ transaction: options.transaction, paranoid: false });
+    }
+  }
 });
 
 export default DeliveryChallan;

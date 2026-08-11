@@ -87,7 +87,14 @@ const Quotation = sequelize.define('Quotation', {
 }, {
   timestamps: true,
   paranoid: true,
-  tableName: 'quotations'
+  tableName: 'quotations',
+  hooks: {
+    beforeDestroy: async (instance, options) => {
+      const suffix = `_deleted_${Date.now()}`;
+      instance.quoteNumber = `${instance.quoteNumber}${suffix}`;
+      await instance.save({ transaction: options.transaction, paranoid: false });
+    }
+  }
 });
 
 export default Quotation;

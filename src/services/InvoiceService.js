@@ -83,14 +83,20 @@ class InvoiceService {
 
     const amountInWords = NumberToWordsService.convert(grandTotal);
 
-    let invoiceNumber = (data.customInvoiceNumber && data.customInvoiceNumber.trim() !== '') 
-      ? data.customInvoiceNumber.trim() 
-      : (data.invoiceNumber && data.invoiceNumber.trim() !== '' 
-        ? data.invoiceNumber.trim() 
-        : await counterService.generateInvoiceNumber());
-
-    const existingInvoice = await invoiceRepository.findOne({ invoiceNumber }, { paranoid: false });
-    if (existingInvoice) {
+    let invoiceNumber;
+    if (data.customInvoiceNumber && data.customInvoiceNumber.trim() !== '') {
+      invoiceNumber = data.customInvoiceNumber.trim();
+      const existingInvoice = await invoiceRepository.findOne({ invoiceNumber }, { paranoid: false });
+      if (existingInvoice) {
+        throw new Error('Invoice number already exists');
+      }
+    } else if (data.invoiceNumber && data.invoiceNumber.trim() !== '') {
+      invoiceNumber = data.invoiceNumber.trim();
+      const existingInvoice = await invoiceRepository.findOne({ invoiceNumber }, { paranoid: false });
+      if (existingInvoice) {
+        invoiceNumber = await counterService.generateInvoiceNumber();
+      }
+    } else {
       invoiceNumber = await counterService.generateInvoiceNumber();
     }
 
@@ -249,10 +255,11 @@ class InvoiceService {
 
     let invoiceNumber = existingInvoice.invoiceNumber;
     if (data.customInvoiceNumber && data.customInvoiceNumber.trim() !== '' && data.customInvoiceNumber.trim() !== invoiceNumber) {
-      const existing = await invoiceRepository.findOne({ invoiceNumber: data.customInvoiceNumber.trim() });
-      if (!existing) {
-        invoiceNumber = data.customInvoiceNumber.trim();
+      const existing = await invoiceRepository.findOne({ invoiceNumber: data.customInvoiceNumber.trim() }, { paranoid: false });
+      if (existing) {
+        throw new Error('Invoice number already exists');
       }
+      invoiceNumber = data.customInvoiceNumber.trim();
     }
 
     const updatedInvoice = await invoiceRepository.update(id, {

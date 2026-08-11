@@ -22,11 +22,11 @@ class DeliveryChallanService {
     let challanNumber;
     if (data.challanNumber && String(data.challanNumber).trim() !== '') {
       challanNumber = String(data.challanNumber).trim();
-      const existing = await deliveryChallanRepository.findOne({ challanNumber });
+      const existing = await deliveryChallanRepository.findOne({ challanNumber }, { paranoid: false });
       if (existing) throw new Error('Challan number already exists');
     } else {
       challanNumber = await counterService.generateChallanNumber();
-      const existingChallan = await deliveryChallanRepository.findOne({ challanNumber });
+      const existingChallan = await deliveryChallanRepository.findOne({ challanNumber }, { paranoid: false });
       if (existingChallan) {
         challanNumber = await counterService.generateChallanNumber();
       }
@@ -74,10 +74,11 @@ class DeliveryChallanService {
 
     let challanNumber = existingChallan.challanNumber;
     if (data.challanNumber && data.challanNumber.trim() !== '' && data.challanNumber.trim() !== challanNumber) {
-      const existing = await deliveryChallanRepository.findOne({ challanNumber: data.challanNumber.trim() });
-      if (!existing) {
-        challanNumber = data.challanNumber.trim();
+      const existing = await deliveryChallanRepository.findOne({ challanNumber: data.challanNumber.trim() }, { paranoid: false });
+      if (existing) {
+        throw new Error('Challan number already exists');
       }
+      challanNumber = data.challanNumber.trim();
     }
 
     const updatedChallan = await deliveryChallanRepository.update(id, {

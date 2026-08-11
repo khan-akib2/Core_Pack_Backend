@@ -66,11 +66,11 @@ class QuotationService {
     let quoteNumber;
     if (data.quoteNumber && String(data.quoteNumber).trim() !== '') {
       quoteNumber = String(data.quoteNumber).trim();
-      const existing = await quotationRepository.findOne({ quoteNumber });
+      const existing = await quotationRepository.findOne({ quoteNumber }, { paranoid: false });
       if (existing) throw new Error('Quotation number already exists');
     } else {
       quoteNumber = await counterService.generateQuotationNumber();
-      const existingQuote = await quotationRepository.findOne({ quoteNumber });
+      const existingQuote = await quotationRepository.findOne({ quoteNumber }, { paranoid: false });
       if (existingQuote) {
         quoteNumber = await counterService.generateQuotationNumber();
       }
@@ -177,10 +177,11 @@ class QuotationService {
 
     let quoteNumber = existingQuote.quoteNumber;
     if (data.customQuoteNumber && data.customQuoteNumber.trim() !== '' && data.customQuoteNumber.trim() !== quoteNumber) {
-      const existing = await quotationRepository.findOne({ quoteNumber: data.customQuoteNumber.trim() });
-      if (!existing) {
-        quoteNumber = data.customQuoteNumber.trim();
+      const existing = await quotationRepository.findOne({ quoteNumber: data.customQuoteNumber.trim() }, { paranoid: false });
+      if (existing) {
+        throw new Error('Quotation number already exists');
       }
+      quoteNumber = data.customQuoteNumber.trim();
     }
 
     let formattedTerms = existingQuote.terms;

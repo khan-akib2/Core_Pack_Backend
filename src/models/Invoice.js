@@ -175,7 +175,14 @@ const Invoice = sequelize.define('Invoice', {
 }, {
   timestamps: true,
   paranoid: true,
-  tableName: 'invoices'
+  tableName: 'invoices',
+  hooks: {
+    beforeDestroy: async (instance, options) => {
+      const suffix = `_deleted_${Date.now()}`;
+      instance.invoiceNumber = `${instance.invoiceNumber}${suffix}`;
+      await instance.save({ transaction: options.transaction, paranoid: false });
+    }
+  }
 });
 
 export default Invoice;
