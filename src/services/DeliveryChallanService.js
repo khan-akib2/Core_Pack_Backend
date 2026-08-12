@@ -13,6 +13,7 @@ class DeliveryChallanService {
     const items = data.items.map(item => ({
       productId: (item.productId && String(item.productId).trim() !== '') ? item.productId : undefined,
       name: item.name || 'Packaging Product',
+      boxSize: item.boxSize || '',
       hsnCode: item.hsnCode || '44151000',
       qty: Number(item.qty) || 1,
       unit: item.unit || 'Pcs',
@@ -73,6 +74,7 @@ class DeliveryChallanService {
     const items = data.items.map(item => ({
       productId: (item.productId && String(item.productId).trim() !== '') ? item.productId : undefined,
       name: item.name || 'Packaging Product',
+      boxSize: item.boxSize || '',
       hsnCode: item.hsnCode || '44151000',
       qty: Number(item.qty) || 1,
       unit: item.unit || 'Pcs',
