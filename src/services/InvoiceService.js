@@ -13,7 +13,7 @@ class InvoiceService {
 
     const company = await companyRepository.getSettings();
 
-    const isInterstate = false;
+    const isInterstate = customer.billingAddress?.stateCode !== company.address?.stateCode;
 
     let subtotal = 0;
     let totalDiscount = 0;
@@ -171,7 +171,7 @@ class InvoiceService {
 
     const company = await companyRepository.getSettings();
 
-    const isInterstate = false;
+    const isInterstate = customer.billingAddress?.stateCode !== company.address?.stateCode;
 
     let subtotal = 0;
     let totalDiscount = 0;

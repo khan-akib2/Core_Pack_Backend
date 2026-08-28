@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import BaseRepository from './BaseRepository.js';
 import Customer from '../models/Customer.js';
 
@@ -8,15 +9,18 @@ class CustomerRepository extends BaseRepository {
 
   async searchCustomers(queryStr) {
     if (!queryStr) return [];
-    return await this.model.find({
-      $or: [
-        { companyName: { $regex: queryStr, $options: 'i' } },
-        { name: { $regex: queryStr, $options: 'i' } },
-        { gstin: { $regex: queryStr, $options: 'i' } },
-        { phone: { $regex: queryStr, $options: 'i' } }
-      ],
-      isActive: true
-    }).limit(20).exec();
+    return await this.model.findAll({
+      where: {
+        [Op.or]: [
+          { companyName: { [Op.like]: `%${queryStr}%` } },
+          { name: { [Op.like]: `%${queryStr}%` } },
+          { gstin: { [Op.like]: `%${queryStr}%` } },
+          { phone: { [Op.like]: `%${queryStr}%` } }
+        ],
+        isActive: true
+      },
+      limit: 20
+    });
   }
 }
 
