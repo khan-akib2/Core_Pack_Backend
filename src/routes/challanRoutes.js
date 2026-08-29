@@ -1,3 +1,4 @@
+
 import express from 'express';
 import {
   getChallans,
@@ -9,6 +10,7 @@ import {
 } from '../controllers/DeliveryChallanController.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
 import { PERMISSIONS } from '../constants/roles.js';
+import { sendDocumentEmail, sendDocumentWhatsApp} from '../controllers/DocumentDeliveryController.js';
 
 const router = express.Router();
 
@@ -18,5 +20,11 @@ router.post('/', authenticate, authorize([PERMISSIONS.CHALLANS_CREATE]), createC
 router.put('/:id', authenticate, authorize([PERMISSIONS.CHALLANS_EDIT]), updateChallan);
 router.patch('/:id/status', authenticate, authorize([PERMISSIONS.CHALLANS_EDIT]), updateChallanStatus);
 router.delete('/:id', authenticate, authorize([PERMISSIONS.CHALLANS_EDIT]), deleteChallan);
+
+// Email route
+router.post('/:id/send-email/:type', authenticate, authorize([PERMISSIONS.CHALLANS_READ]), sendDocumentEmail);
+
+// WhatsApp route
+router.post('/:id/send-whatsapp/:type', authenticate, authorize([PERMISSIONS.CHALLANS_READ]), sendDocumentWhatsApp);
 
 export default router;

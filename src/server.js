@@ -3,6 +3,7 @@ import cron from 'node-cron';
 import app from './app.js';
 import connectDB from './config/db.js';
 import backupService from './services/BackupService.js';
+import WhatsAppService from './services/WhatsAppService.js';
 import logger from './utils/logger.js';
 import { seedDatabase } from './utils/seed.js';
 
@@ -16,6 +17,9 @@ connectDB().then(async (connected) => {
   app.listen(PORT, () => {
     console.log(`[Server]: API listening on port ${PORT}`);
     logger.info(`Server started on port ${PORT}`);
+
+    // Initialize WhatsApp
+    WhatsAppService.initialize();
 
     // Schedule daily backup at 2:00 AM
     cron.schedule('0 2 * * *', async () => {
