@@ -176,6 +176,10 @@ const Invoice = sequelize.define('Invoice', {
   timestamps: true,
   paranoid: true,
   tableName: 'invoices',
+  indexes: [
+    { fields: ['status', 'createdAt'] },
+    { fields: ['paymentStatus', 'createdAt'] }
+  ],
   hooks: {
     beforeDestroy: async (instance, options) => {
       const suffix = `_deleted_${Date.now()}`;

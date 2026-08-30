@@ -88,6 +88,9 @@ const Quotation = sequelize.define('Quotation', {
   timestamps: true,
   paranoid: true,
   tableName: 'quotations',
+  indexes: [
+    { fields: ['status', 'createdAt'] }
+  ],
   hooks: {
     beforeDestroy: async (instance, options) => {
       const suffix = `_deleted_${Date.now()}`;

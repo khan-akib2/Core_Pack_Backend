@@ -2,11 +2,14 @@ import authService from '../services/AuthService.js';
 import userRepository from '../repositories/UserRepository.js';
 import logger from '../utils/logger.js';
 
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+const getCookieOptions = () => {
+  const isProd = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProd, // true in production, false for local dev (10.0.2.2 vs localhost)
+    sameSite: isProd ? 'strict' : 'lax', // Lax for cross-origin local dev
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  };
 };
 
 export const login = async (req, res, next) => {
@@ -16,13 +19,16 @@ export const login = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const result = await authService.login(email, password);
+    const ipAddress = req.ip;
+    const userAgent = req.headers['user-agent'];
+
+    const result = await authService.login(email, password, ipAddress, userAgent);
     
-    // Set HTTP-Only Secure Cookie for Refresh Token
-    res.cookie('refreshToken', result.refreshToken, COOKIE_OPTIONS);
+    res.cookie('refreshToken', result.refreshToken, getCookieOptions());
 
     logger.info(`User Logged In: ${email} (${req.ip})`);
 
+    // Include refreshToken in response so native apps can store it via Preferences/localStorage
     res.json({ success: true, message: 'Login successful', data: result });
   } catch (error) {
     logger.warn(`Failed Login Attempt: ${req.body.email} (${req.ip}) - ${error.message}`);
@@ -32,18 +38,22 @@ export const login = async (req, res, next) => {
 
 export const refreshToken = async (req, res, next) => {
   try {
-    const token = req.cookies.refreshToken || req.body.refreshToken;
+    const token = req.cookies.refreshToken || req.headers['x-refresh-token'];
     
     if (!token) {
       return res.status(401).json({ success: false, message: 'Refresh token is required' });
     }
 
-    const tokens = await authService.refreshToken(token);
+    const ipAddress = req.ip;
+    const userAgent = req.headers['user-agent'];
+
+    const tokens = await authService.refreshToken(token, ipAddress, userAgent);
     
-    res.cookie('refreshToken', tokens.refreshToken, COOKIE_OPTIONS);
+    res.cookie('refreshToken', tokens.refreshToken, getCookieOptions());
     
-    res.json({ success: true, data: tokens });
+    res.json({ success: true, data: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken } });
   } catch (error) {
+    res.clearCookie('refreshToken', { ...getCookieOptions(), maxAge: 0 });
     res.status(401).json({ success: false, message: error.message || 'Invalid refresh token' });
   }
 };
@@ -62,8 +72,10 @@ export const getMe = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
-    await authService.logout(req.user.id);
-    res.clearCookie('refreshToken', { ...COOKIE_OPTIONS, maxAge: 0 });
+    const token = req.cookies.refreshToken || req.headers['x-refresh-token'];
+    await authService.logout(token);
+    
+    res.clearCookie('refreshToken', { ...getCookieOptions(), maxAge: 0 });
     
     logger.info(`User Logged Out: ${req.user.email || req.user.id}`);
     

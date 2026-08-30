@@ -36,7 +36,11 @@ app.use(morgan(morganFormat, { stream: { write: (message) => logger.info(message
 
 app.use(compression());
 
-const whitelist = process.env.CORS_WHITELIST ? process.env.CORS_WHITELIST.split(',') : ['http://localhost:3000', 'http://localhost:5000'];
+const whitelist = process.env.CORS_WHITELIST ? process.env.CORS_WHITELIST.split(',') : [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://10.0.2.2:3000'
+];
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || whitelist.indexOf(origin) !== -1) {
@@ -62,7 +66,7 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false, 
 }));
 
-const limiter = rateLimit({
+const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
   max: 1000, 
   message: { status: 'Error', message: 'Too many requests from this IP, please try again after 15 minutes' },
@@ -70,7 +74,20 @@ const limiter = rateLimit({
   legacyHeaders: false
 });
 
-app.use('/api/', limiter);
+const authSpeedLimiter = slowDown({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  delayAfter: 3, // allow 3 requests per 15 minutes, then...
+  delayMs: (hits) => (hits - 3) * 500, // add 500ms of delay per request above 3
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // max 20 requests per IP
+  message: { status: 'Error', message: 'Too many login attempts from this IP, please try again after 15 minutes' }
+});
+
+app.use('/api/', globalLimiter);
+app.use('/api/v1/auth/login', authSpeedLimiter, authLimiter);
 
 app.use(express.json({ limit: '1mb' })); 
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));

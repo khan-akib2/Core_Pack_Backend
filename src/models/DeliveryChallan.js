@@ -73,6 +73,9 @@ const DeliveryChallan = sequelize.define('DeliveryChallan', {
   timestamps: true,
   paranoid: true,
   tableName: 'delivery_challans',
+  indexes: [
+    { fields: ['status', 'createdAt'] }
+  ],
   hooks: {
     beforeDestroy: async (instance, options) => {
       const suffix = `_deleted_${Date.now()}`;
