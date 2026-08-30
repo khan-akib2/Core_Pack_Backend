@@ -97,7 +97,7 @@ class EmailService {
       `;
 
       // Read logo for CID attachment
-      const logoPath = path.resolve(process.cwd(), '../frontend/public/corepack-logo-trimmed.png');
+      const logoPath = path.resolve(process.cwd(), '../frontend/public/branding/logo-trimmed.png');
       let logoBuffer = null;
       try {
         logoBuffer = fs.readFileSync(logoPath);
@@ -115,7 +115,7 @@ class EmailService {
 
       if (logoBuffer) {
         attachments.push({
-          filename: 'corepack-logo-trimmed.png',
+          filename: 'logo-trimmed.png',
           content: logoBuffer,
           cid: 'corepack-logo'
         });
