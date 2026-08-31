@@ -34,6 +34,10 @@ const Session = sequelize.define('Session', {
   ipAddress: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  pushToken: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   timestamps: true,

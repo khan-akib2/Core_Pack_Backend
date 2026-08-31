@@ -84,3 +84,24 @@ export const logout = async (req, res, next) => {
     next(error);
   }
 };
+
+export const updatePushToken = async (req, res, next) => {
+  try {
+    const { pushToken } = req.body;
+    const token = req.cookies.refreshToken || req.headers['x-refresh-token'];
+
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Refresh token is required to update push token' });
+    }
+
+    if (!pushToken) {
+      return res.status(400).json({ success: false, message: 'Push token is required' });
+    }
+
+    await authService.updateSessionPushToken(token, pushToken);
+    
+    res.json({ success: true, message: 'Push token updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+};

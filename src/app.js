@@ -39,7 +39,8 @@ app.use(compression());
 const whitelist = process.env.CORS_WHITELIST ? process.env.CORS_WHITELIST.split(',') : [
   'http://localhost:3000',
   'http://localhost:5000',
-  'http://10.0.2.2:3000'
+  'http://10.0.2.2:3000',
+  'https://core-pack-india.vercel.app'
 ];
 app.use(cors({
   origin: (origin, callback) => {

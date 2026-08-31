@@ -4,6 +4,7 @@ import app from './app.js';
 import connectDB from './config/db.js';
 import backupService from './services/BackupService.js';
 import WhatsAppService from './services/WhatsAppService.js';
+import pushService from './services/PushService.js';
 import logger from './utils/logger.js';
 import { seedDatabase } from './utils/seed.js';
 
@@ -20,6 +21,9 @@ connectDB().then(async (connected) => {
 
     // Initialize WhatsApp
     WhatsAppService.initialize();
+
+    // Initialize Push Notifications
+    pushService.initialize();
 
     // Schedule daily backup at 2:00 AM
     cron.schedule('0 2 * * *', async () => {
