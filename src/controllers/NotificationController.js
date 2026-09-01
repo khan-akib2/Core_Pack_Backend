@@ -77,3 +77,14 @@ export const getNotifications = async (req, res, next) => {
     next(error);
   }
 };
+
+export const markRead = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      serverTime: Date.now()
+    });
+  } catch (error) {
+    next(error);
+  }
+};
