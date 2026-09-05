@@ -182,22 +182,7 @@ class AuthService {
     return { success: true };
   }
 
-  async updateSessionPushToken(refreshToken, pushToken) {
-    if (!refreshToken) {
-      throw new Error('Refresh Token is required');
-    }
-    const hashedToken = hashToken(refreshToken);
-    const session = await sessionRepository.findByHashedToken(hashedToken);
-    
-    if (session) {
-      if (session.isRevoked) {
-        throw new Error('Session has been revoked');
-      }
-      await sessionRepository.updateById(session.id, { pushToken });
-    } else {
-      throw new Error('Session not found');
-    }
-  }
+
 }
 
 const authService = new AuthService();

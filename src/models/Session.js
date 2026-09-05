@@ -35,10 +35,7 @@ const Session = sequelize.define('Session', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  pushToken: {
-    type: DataTypes.STRING,
-    allowNull: true
-  }
+
 }, {
   timestamps: true,
   tableName: 'sessions',

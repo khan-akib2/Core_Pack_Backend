@@ -100,3 +100,28 @@ export const getGstr1Report = async (req, res, next) => {
     next(error);
   }
 };
+
+export const downloadReportPdf = async (req, res, next) => {
+  try {
+    const { month, year, startDate, endDate } = req.query;
+    
+    // Convert to query string for Puppeteer to pass to the frontend
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (year) params.append('year', year);
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    const queryParams = params.toString() ? `&${params.toString()}` : '';
+
+    // Generate PDF using existing PdfService, pointing to frontend /print/reports/sales
+    const pdfBuffer = await (await import('../services/PdfService.js')).default.generateDocumentPdf('reports', 'sales', req.user.token, queryParams);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Report_${month || 'Current'}_${year || new Date().getFullYear()}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Report PDF Generation Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate report PDF' });
+  }
+};

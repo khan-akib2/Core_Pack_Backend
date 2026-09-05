@@ -2,7 +2,7 @@ import deliveryChallanRepository from '../repositories/DeliveryChallanRepository
 import customerRepository from '../repositories/CustomerRepository.js';
 import companyRepository from '../repositories/CompanyRepository.js';
 import counterService from './CounterService.js';
-import pushService from './PushService.js';
+
 
 class DeliveryChallanService {
   async createChallan(data, userId) {
@@ -61,7 +61,7 @@ class DeliveryChallanService {
       notes: data.notes || '',
       createdBy: userId
     });
-    pushService.notifyUser(userId, 'Delivery Challan Created', `Challan ${challan.challanNumber} has been generated successfully.`);
+
 
     return challan;
   }

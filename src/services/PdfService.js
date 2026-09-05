@@ -5,7 +5,7 @@ dotenv.config();
 const FRONTEND_URL = process.env.CORS_ORIGIN || 'http://localhost:3000';
 
 class PdfService {
-  async generateDocumentPdf(type, id, token) {
+  async generateDocumentPdf(type, id, token, queryParams = '') {
     let browser;
     try {
       browser = await puppeteer.launch({
@@ -23,7 +23,7 @@ class PdfService {
       });
 
       // Construct the secure rendering URL
-      const url = `${FRONTEND_URL}/print/${type}/${id}?token=${token}`;
+      const url = `${FRONTEND_URL}/print/${type}/${id}?token=${token}${queryParams}`;
       
       // Navigate and wait for network idle to ensure fonts/images are loaded
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });

@@ -42,7 +42,7 @@ export const sendDocumentEmail = async (req, res) => {
     const pdfBuffer = await PdfService.generateDocumentPdf(type, id, token);
 
     // Determine default filename
-    const filename = `${type.toUpperCase()}-${documentFound.invoiceNumber || documentFound.quotationNumber || documentFound.challanNumber || id}.pdf`;
+    const filename = `${type.toUpperCase()}-${documentFound.invoiceNumber || documentFound.quoteNumber || documentFound.quotationNumber || documentFound.challanNumber || id}.pdf`;
 
     // Send email
     await EmailService.sendDocumentEmail({
@@ -57,6 +57,41 @@ export const sendDocumentEmail = async (req, res) => {
   } catch (error) {
     console.error('sendDocumentEmail error:', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to send email.' });
+  }
+};
+
+export const downloadDocumentPdf = async (req, res) => {
+  try {
+    const { id, type } = req.params;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Authorization token missing.' });
+    }
+
+    let documentFound = null;
+    if (type === 'invoice') {
+      documentFound = await invoiceRepository.findById(id);
+    } else if (type === 'quotation') {
+      documentFound = await quotationRepository.findById(id);
+    } else if (type === 'challan') {
+      documentFound = await deliveryChallanRepository.findById(id);
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid document type.' });
+    }
+
+    if (!documentFound) {
+      return res.status(404).json({ success: false, message: 'Document not found.' });
+    }
+
+    const pdfBuffer = await PdfService.generateDocumentPdf(type, id, token);
+    const filename = `${type.toUpperCase()}-${documentFound.invoiceNumber || documentFound.quoteNumber || documentFound.quotationNumber || documentFound.challanNumber || id}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('downloadDocumentPdf error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to generate PDF.' });
   }
 };
 
@@ -109,7 +144,7 @@ export const sendDocumentWhatsApp = async (req, res) => {
     console.log(`[DocumentDeliveryController] Generating PDF ONCE for ${recipientList.length} recipient(s)...`);
     const pdfBuffer = await PdfService.generateDocumentPdf(type, id, token);
 
-    const filename = `${type.toUpperCase()}-${documentFound.invoiceNumber || documentFound.quotationNumber || documentFound.challanNumber || id}.pdf`;
+    const filename = `${type.toUpperCase()}-${documentFound.invoiceNumber || documentFound.quoteNumber || documentFound.quotationNumber || documentFound.challanNumber || id}.pdf`;
 
     // Send PDF sequentially to each recipient using the SINGLE pdfBuffer
     const results = [];

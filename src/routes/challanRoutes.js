@@ -10,7 +10,7 @@ import {
 } from '../controllers/DeliveryChallanController.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
 import { PERMISSIONS } from '../constants/roles.js';
-import { sendDocumentEmail, sendDocumentWhatsApp} from '../controllers/DocumentDeliveryController.js';
+import { sendDocumentEmail, sendDocumentWhatsApp, downloadDocumentPdf } from '../controllers/DocumentDeliveryController.js';
 
 const router = express.Router();
 
@@ -26,5 +26,8 @@ router.post('/:id/send-email/:type', authenticate, authorize([PERMISSIONS.CHALLA
 
 // WhatsApp route
 router.post('/:id/send-whatsapp/:type', authenticate, authorize([PERMISSIONS.CHALLANS_READ]), sendDocumentWhatsApp);
+
+// Download PDF route
+router.get('/:id/download/:type', authenticate, authorize([PERMISSIONS.CHALLANS_READ]), downloadDocumentPdf);
 
 export default router;

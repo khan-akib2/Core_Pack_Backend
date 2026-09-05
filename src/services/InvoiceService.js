@@ -5,7 +5,7 @@ import quotationRepository from '../repositories/QuotationRepository.js';
 import deliveryChallanRepository from '../repositories/DeliveryChallanRepository.js';
 import counterService from './CounterService.js';
 import NumberToWordsService from './NumberToWordsService.js';
-import pushService from './PushService.js';
+
 
 class InvoiceService {
   async createInvoice(data, userId) {
@@ -160,7 +160,7 @@ class InvoiceService {
       await deliveryChallanRepository.update(data.challanId, { status: 'Invoiced' });
     }
 
-    pushService.notifyUser(userId, 'Invoice Created', `Invoice ${invoice.invoiceNumber} has been generated successfully.`);
+
 
     return invoice;
   }

@@ -20,8 +20,8 @@ class CounterService {
     });
 
     let nextSeq = counter.seq + 1;
-    if (nextSeq >= 1000) {
-      nextSeq = nextSeq % 1000;
+    if (nextSeq >= 10000) {
+      nextSeq = nextSeq % 10000;
       if (nextSeq === 0) nextSeq = 1;
     }
 
@@ -38,18 +38,26 @@ class CounterService {
       field = 'quoteNumber';
     }
 
-    let paddedSeq = nextSeq.toString().padStart(3, '0');
+    const getFullSeq = (seq) => {
+      const pad = seq.toString().padStart(4, '0');
+      if (sequenceType === 'invoice') return `INV-${fiscalYear}-${pad}`;
+      if (sequenceType === 'challan') return `CH-${fiscalYear}-${pad}`;
+      if (sequenceType === 'quote') return `QT-${fiscalYear}-${pad}`;
+      return pad;
+    };
+
+    let fullSeq = getFullSeq(nextSeq);
     if (model) {
-      let exists = await model.findOne({ where: { [field]: paddedSeq }, paranoid: false });
+      let exists = await model.findOne({ where: { [field]: fullSeq }, paranoid: false });
       while (exists) {
         nextSeq++;
-        paddedSeq = nextSeq.toString().padStart(3, '0');
-        exists = await model.findOne({ where: { [field]: paddedSeq }, paranoid: false });
+        fullSeq = getFullSeq(nextSeq);
+        exists = await model.findOne({ where: { [field]: fullSeq }, paranoid: false });
       }
     }
 
     await counter.update({ seq: nextSeq });
-    return { seq: nextSeq, fiscalYear, paddedSeq };
+    return { seq: nextSeq, fiscalYear, fullSeq };
   }
 
   async getNextPreview(type = 'invoice') {
@@ -59,8 +67,8 @@ class CounterService {
 
     const counter = await Counter.findByPk(sequenceName);
     let nextSeq = (counter ? counter.seq : 0) + 1;
-    if (nextSeq >= 1000) {
-      nextSeq = nextSeq % 1000;
+    if (nextSeq >= 10000) {
+      nextSeq = nextSeq % 10000;
       if (nextSeq === 0) nextSeq = 1;
     }
 
@@ -77,32 +85,40 @@ class CounterService {
       field = 'quoteNumber';
     }
 
-    let paddedSeq = nextSeq.toString().padStart(3, '0');
+    const getFullSeq = (seq) => {
+      const pad = seq.toString().padStart(4, '0');
+      if (seqType === 'invoice') return `INV-${fiscalYear}-${pad}`;
+      if (seqType === 'challan') return `CH-${fiscalYear}-${pad}`;
+      if (seqType === 'quote') return `QT-${fiscalYear}-${pad}`;
+      return pad;
+    };
+
+    let fullSeq = getFullSeq(nextSeq);
     if (model) {
-      let exists = await model.findOne({ where: { [field]: paddedSeq }, paranoid: false });
+      let exists = await model.findOne({ where: { [field]: fullSeq }, paranoid: false });
       while (exists) {
         nextSeq++;
-        paddedSeq = nextSeq.toString().padStart(3, '0');
-        exists = await model.findOne({ where: { [field]: paddedSeq }, paranoid: false });
+        fullSeq = getFullSeq(nextSeq);
+        exists = await model.findOne({ where: { [field]: fullSeq }, paranoid: false });
       }
     }
 
-    return paddedSeq;
+    return fullSeq;
   }
 
   async generateInvoiceNumber() {
-    const { paddedSeq } = await this.getNextSequence('invoice');
-    return paddedSeq;
+    const { fullSeq } = await this.getNextSequence('invoice');
+    return fullSeq;
   }
 
   async generateChallanNumber() {
-    const { paddedSeq } = await this.getNextSequence('challan');
-    return paddedSeq;
+    const { fullSeq } = await this.getNextSequence('challan');
+    return fullSeq;
   }
 
   async generateQuotationNumber() {
-    const { paddedSeq } = await this.getNextSequence('quote');
-    return paddedSeq;
+    const { fullSeq } = await this.getNextSequence('quote');
+    return fullSeq;
   }
 }
 

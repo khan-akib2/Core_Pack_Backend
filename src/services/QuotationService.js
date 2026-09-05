@@ -2,7 +2,7 @@ import quotationRepository from '../repositories/QuotationRepository.js';
 import customerRepository from '../repositories/CustomerRepository.js';
 import companyRepository from '../repositories/CompanyRepository.js';
 import counterService from './CounterService.js';
-import pushService from './PushService.js';
+
 import NumberToWordsService from './NumberToWordsService.js';
 
 class QuotationService {
@@ -117,7 +117,7 @@ class QuotationService {
       terms: formattedTerms,
       createdBy: userId
     });
-    pushService.notifyUser(userId, 'Quotation Created', `Quotation ${quotation.quotationNumber} has been generated successfully.`);
+
 
     return quotation;
   }
