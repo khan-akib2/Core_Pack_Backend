@@ -33,9 +33,11 @@ class BackupService {
     const dbPort = process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306;
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const tempSqlPath = path.join(backupDir, `${dbName}_backup_${timestamp}.sql`);
     const backupFileName = `${dbName}_backup_${timestamp}.sql.gz`;
     const backupFilePath = path.join(backupDir, backupFileName);
 
+    // Dump uncompressed first because mysqldump's compressFile is bugged
     await mysqldump({
       connection: {
         host: dbHost,
@@ -44,9 +46,23 @@ class BackupService {
         database: dbName,
         port: dbPort,
       },
-      dumpToFile: backupFilePath,
-      compressFile: true,
+      dumpToFile: tempSqlPath,
+      compressFile: false,
     });
+    
+    // Manually gzip the file
+    await new Promise((resolve, reject) => {
+      const readStream = fs.createReadStream(tempSqlPath);
+      const writeStream = fs.createWriteStream(backupFilePath);
+      const gzip = zlib.createGzip();
+      
+      readStream.pipe(gzip).pipe(writeStream)
+        .on('finish', resolve)
+        .on('error', reject);
+    });
+    
+    // Cleanup uncompressed file
+    fs.unlinkSync(tempSqlPath);
     
     // Verify backup
     const stats = fs.statSync(backupFilePath);

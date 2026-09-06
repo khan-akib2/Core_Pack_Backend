@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import Counter from '../models/Counter.js';
 import Invoice from '../models/Invoice.js';
 import DeliveryChallan from '../models/DeliveryChallan.js';
@@ -10,20 +11,76 @@ class CounterService {
     return `${year}-${nextYear}`;
   }
 
-  async getNextSequence(sequenceType) {
+  getSequenceName(sequenceType) {
     const fiscalYear = this.getFiscalYear();
-    const sequenceName = `${sequenceType}_${fiscalYear}`;
+    return `${sequenceType}_${fiscalYear}`;
+  }
 
-    let [counter] = await Counter.findOrCreate({
-      where: { name: sequenceName },
-      defaults: { name: sequenceName, seq: 0 }
+  getFiscalYearDateRange() {
+    const year = new Date().getFullYear();
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year + 1, 0, 1);
+    return { startDate, endDate };
+  }
+
+  async extractMaxSequence(model, field) {
+    const { startDate, endDate } = this.getFiscalYearDateRange();
+    const records = await model.findAll({
+      attributes: [field],
+      where: {
+        createdAt: {
+          [Op.gte]: startDate,
+          [Op.lt]: endDate
+        }
+      },
+      paranoid: false // Include deleted to find true max
     });
-
-    let nextSeq = counter.seq + 1;
-    if (nextSeq >= 10000) {
-      nextSeq = nextSeq % 10000;
-      if (nextSeq === 0) nextSeq = 1;
+    
+    let max = 0;
+    
+    for (const record of records) {
+      const numStr = record[field];
+      if (!numStr) continue;
+      
+      const cleanFormat = numStr.split('_deleted_')[0];
+      const match = cleanFormat.match(/(\d+)$/);
+      if (match) {
+        const seq = parseInt(match[1], 10);
+        if (seq > max) {
+          max = seq;
+        }
+      }
     }
+    
+    return max;
+  }
+  
+  async getFormatSample(model, field) {
+    if (!model) return null;
+    const latest = await model.findOne({
+      attributes: [field],
+      order: [['createdAt', 'DESC']],
+      paranoid: false
+    });
+    if (latest && latest[field]) {
+      return latest[field].split('_deleted_')[0];
+    }
+    return null;
+  }
+
+  formatSequence(seq, sequenceType, formatSample) {
+    const pad = seq.toString().padStart(3, '0'); // Defaults to 3 digits based on prod data
+    
+    if (formatSample) {
+      // Replace the numeric part at the end of the format sample with the new padded sequence
+      return formatSample.replace(/\d+$/, seq.toString().padStart(formatSample.match(/(\d+)$/)[1].length, '0'));
+    }
+    
+    return pad;
+  }
+
+  async getNextSequence(sequenceType) {
+    const sequenceName = this.getSequenceName(sequenceType);
 
     let model = null;
     let field = 'invoiceNumber';
@@ -38,39 +95,61 @@ class CounterService {
       field = 'quoteNumber';
     }
 
-    const getFullSeq = (seq) => {
-      const pad = seq.toString().padStart(4, '0');
-      if (sequenceType === 'invoice') return `INV-${fiscalYear}-${pad}`;
-      if (sequenceType === 'challan') return `CH-${fiscalYear}-${pad}`;
-      if (sequenceType === 'quote') return `QT-${fiscalYear}-${pad}`;
-      return pad;
-    };
+    // Try to find the counter
+    let counter = await Counter.findOne({ where: { name: sequenceName } });
+    
+    let nextSeq = 1;
+    let formatSample = await this.getFormatSample(model, field);
 
-    let fullSeq = getFullSeq(nextSeq);
+    if (!counter && model) {
+      // Recovery logic: Scoped to current FY
+      const max = await this.extractMaxSequence(model, field);
+      nextSeq = max + 1;
+      
+      try {
+        counter = await Counter.create({
+          name: sequenceName,
+          seq: nextSeq
+        });
+      } catch (err) {
+        // Race condition: another request created the counter
+        counter = await Counter.findOne({ where: { name: sequenceName } });
+        await Counter.increment('seq', { where: { name: sequenceName } });
+        await counter.reload();
+        nextSeq = counter.seq;
+      }
+    } else if (counter) {
+      // Atomic increment for existing counter
+      await Counter.increment('seq', { where: { name: sequenceName } });
+      await counter.reload();
+      nextSeq = counter.seq;
+    }
+
+    if (nextSeq >= 100000) {
+      nextSeq = nextSeq % 100000;
+      if (nextSeq === 0) nextSeq = 1;
+      if (counter) await counter.update({ seq: nextSeq });
+    }
+
+    let fullSeq = this.formatSequence(nextSeq, sequenceType, formatSample);
+
+    // Collision protection (safety net for DB uniqueness)
     if (model) {
       let exists = await model.findOne({ where: { [field]: fullSeq }, paranoid: false });
       while (exists) {
         nextSeq++;
-        fullSeq = getFullSeq(nextSeq);
+        if (counter) await counter.update({ seq: nextSeq });
+        fullSeq = this.formatSequence(nextSeq, sequenceType, formatSample);
         exists = await model.findOne({ where: { [field]: fullSeq }, paranoid: false });
       }
     }
-
-    await counter.update({ seq: nextSeq });
-    return { seq: nextSeq, fiscalYear, fullSeq };
+    
+    return { seq: nextSeq, fiscalYear: this.getFiscalYear(), fullSeq };
   }
 
   async getNextPreview(type = 'invoice') {
-    const fiscalYear = this.getFiscalYear();
     const seqType = type === 'challan' ? 'challan' : type === 'quote' ? 'quote' : 'invoice';
-    const sequenceName = `${seqType}_${fiscalYear}`;
-
-    const counter = await Counter.findByPk(sequenceName);
-    let nextSeq = (counter ? counter.seq : 0) + 1;
-    if (nextSeq >= 10000) {
-      nextSeq = nextSeq % 10000;
-      if (nextSeq === 0) nextSeq = 1;
-    }
+    const sequenceName = this.getSequenceName(seqType);
 
     let model = null;
     let field = 'invoiceNumber';
@@ -85,20 +164,29 @@ class CounterService {
       field = 'quoteNumber';
     }
 
-    const getFullSeq = (seq) => {
-      const pad = seq.toString().padStart(4, '0');
-      if (seqType === 'invoice') return `INV-${fiscalYear}-${pad}`;
-      if (seqType === 'challan') return `CH-${fiscalYear}-${pad}`;
-      if (seqType === 'quote') return `QT-${fiscalYear}-${pad}`;
-      return pad;
-    };
+    let counter = await Counter.findOne({ where: { name: sequenceName } });
+    let formatSample = await this.getFormatSample(model, field);
+    
+    let nextSeq = 1;
+    if (!counter && model) {
+      const max = await this.extractMaxSequence(model, field);
+      nextSeq = max + 1;
+    } else if (counter) {
+      nextSeq = counter.seq + 1;
+    }
 
-    let fullSeq = getFullSeq(nextSeq);
+    if (nextSeq >= 100000) {
+      nextSeq = nextSeq % 100000;
+      if (nextSeq === 0) nextSeq = 1;
+    }
+
+    let fullSeq = this.formatSequence(nextSeq, seqType, formatSample);
+
     if (model) {
       let exists = await model.findOne({ where: { [field]: fullSeq }, paranoid: false });
       while (exists) {
         nextSeq++;
-        fullSeq = getFullSeq(nextSeq);
+        fullSeq = this.formatSequence(nextSeq, seqType, formatSample);
         exists = await model.findOne({ where: { [field]: fullSeq }, paranoid: false });
       }
     }

@@ -19,3 +19,6 @@ mysql.sock
 # WhatsApp Web & Puppeteer session/cache data
 .wwebjs_auth/
 .wwebjs_cache/
+
+# Database backups
+backups/
