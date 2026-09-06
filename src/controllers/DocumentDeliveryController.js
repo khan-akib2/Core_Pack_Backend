@@ -89,7 +89,7 @@ export const downloadDocumentPdf = async (req, res) => {
     if (req.query.format === 'base64') {
       return res.status(200).json({
         success: true,
-        base64: pdfBuffer.toString('base64'),
+        base64: Buffer.from(pdfBuffer).toString('base64'),
         filename
       });
     }

@@ -114,15 +114,20 @@ export const downloadReportPdf = async (req, res, next) => {
     
     const queryParams = params.toString() ? `&${params.toString()}` : '';
 
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Authorization token missing.' });
+    }
+
     // Generate PDF using existing PdfService, pointing to frontend /print/reports/sales
-    const pdfBuffer = await (await import('../services/PdfService.js')).default.generateDocumentPdf('reports', 'sales', req.user.token, queryParams);
+    const pdfBuffer = await (await import('../services/PdfService.js')).default.generateDocumentPdf('reports', 'sales', token, queryParams);
 
     const filename = `Report_${month || 'Current'}_${year || new Date().getFullYear()}.pdf`;
 
     if (req.query.format === 'base64') {
       return res.status(200).json({
         success: true,
-        base64: pdfBuffer.toString('base64'),
+        base64: Buffer.from(pdfBuffer).toString('base64'),
         filename
       });
     }

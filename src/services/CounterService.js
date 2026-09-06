@@ -6,9 +6,14 @@ import Quotation from '../models/Quotation.js';
 
 class CounterService {
   getFiscalYear() {
-    const year = new Date().getFullYear();
-    const nextYear = (year + 1).toString().slice(2);
-    return `${year}-${nextYear}`;
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    // Indian FY: April (3) to March (2)
+    if (month < 3) {
+      return `${year - 1}-${year.toString().slice(2)}`;
+    }
+    return `${year}-${(year + 1).toString().slice(2)}`;
   }
 
   getSequenceName(sequenceType) {
@@ -17,9 +22,14 @@ class CounterService {
   }
 
   getFiscalYearDateRange() {
-    const year = new Date().getFullYear();
-    const startDate = new Date(year, 0, 1);
-    const endDate = new Date(year + 1, 0, 1);
+    const now = new Date();
+    const month = now.getMonth();
+    let year = now.getFullYear();
+    if (month < 3) {
+      year = year - 1;
+    }
+    const startDate = new Date(year, 3, 1);
+    const endDate = new Date(year + 1, 3, 1);
     return { startDate, endDate };
   }
 
