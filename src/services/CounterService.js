@@ -98,6 +98,15 @@ class CounterService {
     // Try to find the counter
     let counter = await Counter.findOne({ where: { name: sequenceName } });
     
+    // Self-heal: If counter is ahead of actual DB records (e.g. from failed creations), reset it
+    if (counter && model) {
+      const max = await this.extractMaxSequence(model, field);
+      if (counter.seq > max) {
+        counter.seq = max;
+        await counter.save();
+      }
+    }
+
     let nextSeq = 1;
     let formatSample = await this.getFormatSample(model, field);
 
@@ -165,6 +174,16 @@ class CounterService {
     }
 
     let counter = await Counter.findOne({ where: { name: sequenceName } });
+    
+    // Self-heal: If counter is ahead of actual DB records
+    if (counter && model) {
+      const max = await this.extractMaxSequence(model, field);
+      if (counter.seq > max) {
+        counter.seq = max;
+        await counter.save();
+      }
+    }
+
     let formatSample = await this.getFormatSample(model, field);
     
     let nextSeq = 1;
