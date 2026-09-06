@@ -86,6 +86,14 @@ export const downloadDocumentPdf = async (req, res) => {
     const pdfBuffer = await PdfService.generateDocumentPdf(type, id, token);
     const filename = `${type.toUpperCase()}-${documentFound.invoiceNumber || documentFound.quoteNumber || documentFound.quotationNumber || documentFound.challanNumber || id}.pdf`;
 
+    if (req.query.format === 'base64') {
+      return res.status(200).json({
+        success: true,
+        base64: pdfBuffer.toString('base64'),
+        filename
+      });
+    }
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdfBuffer);

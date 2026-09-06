@@ -117,8 +117,18 @@ export const downloadReportPdf = async (req, res, next) => {
     // Generate PDF using existing PdfService, pointing to frontend /print/reports/sales
     const pdfBuffer = await (await import('../services/PdfService.js')).default.generateDocumentPdf('reports', 'sales', req.user.token, queryParams);
 
+    const filename = `Report_${month || 'Current'}_${year || new Date().getFullYear()}.pdf`;
+
+    if (req.query.format === 'base64') {
+      return res.status(200).json({
+        success: true,
+        base64: pdfBuffer.toString('base64'),
+        filename
+      });
+    }
+
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="Report_${month || 'Current'}_${year || new Date().getFullYear()}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdfBuffer);
   } catch (error) {
     console.error('Report PDF Generation Error:', error);
