@@ -12,9 +12,9 @@ class PdfService {
         headless: 'new',
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security']
       });
-      
+
       const page = await browser.newPage();
-      
+
       // Set a standard desktop viewport
       await page.setViewport({
         width: 1200,
@@ -22,16 +22,21 @@ class PdfService {
         deviceScaleFactor: 1,
       });
 
+      let baseUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:3000';
+      if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+        baseUrl = `https://${baseUrl}`;
+      }
+
       // Construct the secure rendering URL
-      const url = `${FRONTEND_URL}/print/${type}/${id}?token=${token}${queryParams}`;
-      
+      const url = `${baseUrl}/print/${type}/${id}?token=${token}${queryParams}`;
+
       // Navigate and wait for network idle to ensure fonts/images are loaded
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-      
+
       // Additional small wait to ensure React finishes any immediate rendering 
       // (like evaluating the components if there's a slight delay after network)
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // Check for error messages rendered by the component
       const errorText = await page.evaluate(() => {
         const errEl = document.querySelector('.text-rose-500');

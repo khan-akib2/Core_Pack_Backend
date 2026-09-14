@@ -43,15 +43,15 @@ class CounterService {
           [Op.lt]: endDate
         }
       },
-      paranoid: false // Include deleted to find true max
+      paranoid: true // Only count active non-deleted records to find current max
     });
-    
+
     let max = 0;
-    
+
     for (const record of records) {
       const numStr = record[field];
       if (!numStr) continue;
-      
+
       const cleanFormat = numStr.split('_deleted_')[0];
       const match = cleanFormat.match(/(\d+)$/);
       if (match) {
@@ -61,10 +61,10 @@ class CounterService {
         }
       }
     }
-    
+
     return max;
   }
-  
+
   async getFormatSample(model, field) {
     if (!model) return null;
     const latest = await model.findOne({
@@ -80,12 +80,12 @@ class CounterService {
 
   formatSequence(seq, sequenceType, formatSample) {
     const pad = seq.toString().padStart(3, '0'); // Defaults to 3 digits based on prod data
-    
+
     if (formatSample) {
       // Replace the numeric part at the end of the format sample with the new padded sequence
       return formatSample.replace(/\d+$/, seq.toString().padStart(formatSample.match(/(\d+)$/)[1].length, '0'));
     }
-    
+
     return pad;
   }
 
@@ -107,7 +107,7 @@ class CounterService {
 
     // Try to find the counter
     let counter = await Counter.findOne({ where: { name: sequenceName } });
-    
+
     // Self-heal: If counter is ahead of actual DB records (e.g. from failed creations), reset it
     if (counter && model) {
       const max = await this.extractMaxSequence(model, field);
@@ -124,7 +124,7 @@ class CounterService {
       // Recovery logic: Scoped to current FY
       const max = await this.extractMaxSequence(model, field);
       nextSeq = max + 1;
-      
+
       try {
         counter = await Counter.create({
           name: sequenceName,
@@ -162,7 +162,7 @@ class CounterService {
         exists = await model.findOne({ where: { [field]: fullSeq }, paranoid: false });
       }
     }
-    
+
     return { seq: nextSeq, fiscalYear: this.getFiscalYear(), fullSeq };
   }
 
@@ -184,7 +184,7 @@ class CounterService {
     }
 
     let counter = await Counter.findOne({ where: { name: sequenceName } });
-    
+
     // Self-heal: If counter is ahead of actual DB records
     if (counter && model) {
       const max = await this.extractMaxSequence(model, field);
@@ -195,7 +195,7 @@ class CounterService {
     }
 
     let formatSample = await this.getFormatSample(model, field);
-    
+
     let nextSeq = 1;
     if (!counter && model) {
       const max = await this.extractMaxSequence(model, field);
