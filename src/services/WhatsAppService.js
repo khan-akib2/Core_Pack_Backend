@@ -2,7 +2,6 @@ import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth, MessageMedia } = pkg;
 import EventEmitter from 'events';
 import logger from '../utils/logger.js';
-import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
@@ -102,14 +101,12 @@ class WhatsAppService extends EventEmitter {
 
       this.cleanupStaleLocks(cleanSessionOnFailure);
 
-      const execPath = await puppeteer.executablePath();
       this.client = new Client({
         authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
         webVersionCache: {
-          type: 'local'
+          type: 'none'
         },
         puppeteer: {
-          executablePath: execPath,
           headless: true,
           bypassCSP: true,
           protocolTimeout: 120000, // 2 minutes timeout for CDP commands
@@ -168,16 +165,26 @@ class WhatsAppService extends EventEmitter {
       logger.info('Initializing WhatsApp client (launching Chromium with local webVersionCache)...');
       
       const initPromise = this.client.initialize();
+      const readyOrQrPromise = new Promise((resolve, reject) => {
+        const onSuccess = () => resolve();
+        this.client.once('qr', onSuccess);
+        this.client.once('ready', onSuccess);
+        this.client.once('authenticated', onSuccess);
+        this.client.once('auth_failure', (msg) => reject(new Error(`Authentication failed: ${msg}`)));
+        this.client.once('disconnected', (reason) => reject(new Error(`Disconnected before ready: ${reason}`)));
+      });
+
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Initialization timed out after 60 seconds.')), 60000)
+        setTimeout(() => reject(new Error('Initialization timed out after 60 seconds waiting for QR or Ready state.')), 60000)
       );
 
       try {
-        await Promise.race([initPromise, timeoutPromise]);
+        await Promise.race([initPromise.then(() => readyOrQrPromise), timeoutPromise]);
       } catch (err) {
         // Force cleanup on timeout, but don't await destroy as it might hang if browser is stuck
         try {
           if (this.client) {
+            this.client.removeAllListeners();
             this.client.destroy().catch(() => {});
           }
         } catch (destroyErr) {}
