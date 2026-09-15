@@ -5,6 +5,7 @@ import quotationRepository from '../repositories/QuotationRepository.js';
 import deliveryChallanRepository from '../repositories/DeliveryChallanRepository.js';
 import counterService from './CounterService.js';
 import NumberToWordsService from './NumberToWordsService.js';
+import paymentService from './PaymentService.js';
 
 
 class InvoiceService {
@@ -317,44 +318,9 @@ class InvoiceService {
     return updatedInvoice;
   }
 
-  async recordPayment(invoiceId, paymentData) {
-    const invoice = await invoiceRepository.findById(invoiceId);
-    if (!invoice) throw new Error('Invoice not found');
-
-    const amountPaid = Number(paymentData.amount);
-    const currentPaid = Number(invoice.paidAmount || 0);
-    const grandTotal = Number(invoice.grandTotal || 0);
-
-    const newPaidAmount = currentPaid + amountPaid;
-    const newDueAmount = Math.max(0, grandTotal - newPaidAmount);
-
-    let paymentStatus = 'Unpaid';
-    if (newDueAmount <= 0) {
-      paymentStatus = 'Paid';
-    } else if (newPaidAmount > 0) {
-      paymentStatus = 'Partial';
-    }
-
-    const existingPayments = Array.isArray(invoice.payments) ? invoice.payments : [];
-
-    const updatedPayments = [
-      ...existingPayments,
-      {
-        paymentDate: paymentData.paymentDate || new Date(),
-        amount: amountPaid,
-        mode: paymentData.mode || 'Bank Transfer',
-        referenceNo: paymentData.referenceNo || '',
-        notes: paymentData.notes || ''
-      }
-    ];
-
-    return await invoiceRepository.update(invoiceId, {
-      paidAmount: newPaidAmount,
-      dueAmount: newDueAmount,
-      balanceAmount: newDueAmount,
-      paymentStatus,
-      payments: updatedPayments
-    });
+  async recordPayment(invoiceId, paymentData, userId) {
+    // Delegate to PaymentService to maintain single source of truth
+    return await paymentService.recordPayment(invoiceId, paymentData, userId);
   }
 }
 

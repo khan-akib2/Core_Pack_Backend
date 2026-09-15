@@ -21,6 +21,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import counterRoutes from './routes/counterRoutes.js';
 import backupRoutes from './routes/backupRoutes.js';
 import whatsappRoutes from './routes/whatsappRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 
@@ -122,6 +123,7 @@ app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/counters', counterRoutes);
 app.use('/api/v1/backups', backupRoutes);
 app.use('/api/v1/whatsapp', whatsappRoutes);
+app.use('/api/v1/payments', paymentRoutes);
 
 app.use(errorHandler);
 
